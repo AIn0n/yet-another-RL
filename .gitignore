@@ -128,3 +128,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#C++ compiled files
+Cplusplus-tic-tac-toe-RL/.main
