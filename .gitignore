@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 python-tic-tac-toe-RL/__pycache__/
+python-tic-tac-toe-Policy-RL/__pycache__/
 __pycache__/
 *.py[cod]
 *$py.class
