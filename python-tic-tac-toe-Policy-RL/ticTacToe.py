@@ -54,7 +54,22 @@ class TicTacToe:
                 possibilities.append(''.join(possibility))
         return possibilities
 
+    #wyswietl mozliwe nastepne stany dla state przyjmuje stan jako string
+    def next_state_x_for(self, state):     
+        state = list(state)
+        possibilities = []
+        for i in range(0, 9):
+            if state[i] == '.':
+                possibility = []
+                possibility.extend(self.tab)
+                possibility[9] = 'X'
+                possibility[i] = 'X'
+                possibilities.append(''.join(possibility))
+        return possibilities
 
+    #zasadnicza roznica miedzy obydwiema powyzszymi funkcjami jest taka ze ta
+    #pierwsza dziala dla game.tab a druga dla dowolnego stanu, napisalem ja
+    #poniewaz musze dostac kolejne stany po danym w rekurencyjnym policy evaluation
 
     def next_state_o(self):     #wyswietl mozliwe stany dla gracza o
         possibilities = []

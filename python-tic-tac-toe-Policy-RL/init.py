@@ -3,9 +3,9 @@ from ticTacToe import *
 import time
 
 ALPHA = 0.1
-FI = 0.01
+FI = 0.1
 
-rl = reinf_learning(ALPHA, FI)
+rl = reinf_learning(ALPHA)
 game = TicTacToe()
 
 #==============================PONIZSZY KOD MA UCZYC============================
@@ -15,12 +15,9 @@ def policy_eval_rec(rl, game, char):
         next_state_set = game.next_state_x()
     else:
         next_state_set = []
-        curr_state = game.tab
         aux = game.next_state_o()
         for state in aux:
-            game.tab = state
-            next_state_set += game.next_state_x()
-        game.tab = curr_state
+            next_state_set += game.next_state_x_for(state)
 
     for state in next_state_set:
 
@@ -30,16 +27,13 @@ def policy_eval_rec(rl, game, char):
         elif win == 0:  rl.change_prize( state, -1.0)
 
         if win == -2:
-
             curr_state = game.curr_state()
 
             rl.prev_state = state
             game.tab = state
 
-            if char == 'X':
-                policy_eval_rec(rl, game, 'O')
-            else:
-                policy_eval_rec(rl, game, 'X')
+            if char == 'X': policy_eval_rec(rl, game, 'O')
+            else:           policy_eval_rec(rl, game, 'X')
 
             rl.prev_state = curr_state
             game.tab = curr_state
@@ -53,9 +47,7 @@ def policy_imprv_rec(rl, game, char):
         next_state_set = []
         aux = game.next_state_o()
         for state in aux:
-            game.tab = state
-            next_state_set += game.next_state_x()
-        game.reset()
+            next_state_set += game.next_state_x_for(state)
 
     for state in next_state_set:
 
@@ -68,34 +60,31 @@ def policy_imprv_rec(rl, game, char):
             rl.prev_state = state
             game.tab = state
 
-            if char == 'X':
-                policy_eval_rec(rl, game, 'O')
-            else:
-                policy_eval_rec(rl, game, 'X')
+            if char == 'X': policy_imprv_rec(rl, game, 'O')
+            else:           policy_imprv_rec(rl, game, 'X')
 
             rl.prev_state = curr_state
             game.tab = curr_state
 
     rl.policy_improvement(next_state_set)
 
+time_counter = time.time()      #do liczenia czasu
+
 while rl.is_policy_stable == False:
 
-    old_delta = 0.0
+    print("policy improvment")
+
     while True:
-        time_counter = time.time()      #do liczenia czasu
         rl.delta = 0.0                  #zawsze zaczyna od zerowej delty
-        policy_eval_rec(rl, game, "X")  #tutaj rekurencyjnie policy evaluation
-        time_counter = time.time() - time_counter   #tez do liczenia czasu
-        print("===\nGOTOWE\n===\nczas = ", time_counter)
-        #jezeli delta nieznacznie sie zmienila
-        #to mozemy sobie przejsc do policy improvment
-        if(rl.delta == old_delta): break
-        old_delta = rl.delta
+        aux = policy_eval_rec(rl, game, "X")  #tutaj rekurencyjnie policy evaluation
+        print("policy eval")
         game.reset()
+        if rl.delta < FI: break
 
     rl.is_policy_stable = True
     policy_imprv_rec(rl, game, "X")  #tutaj rekurencyjnie policy improvment
     game.reset()
+print("czas = ", time.time() - time_counter)
 
 #=========================KOD NIZEJ SLUZY DO GRY===============================
 
@@ -110,7 +99,6 @@ while tmp != 0:
             while game.postaw_znak_o(int(input("podaj x => ")), int(input("podaj y => "))) == 1:
                 print("podano zle liczby!")
         else:               
-            rl.show_prizes(game.next_state_x())
             game.tab = rl.check_possible_states(game.next_state_x())
             print("ruch komputera")
 

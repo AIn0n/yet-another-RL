@@ -1,11 +1,10 @@
 import random 
 class reinf_learning:
-    def __init__(self, alfa, usr_fi): 
+    def __init__(self, alfa): 
         self.prize_dict = dict()
         self.alpha = alfa       #alfa
         self.prev_state = 0     #poprzedni stan
         self.is_policy_stable = False      #true jezeli policy jest stabilne
-        self.fi =  usr_fi             #to powinna byc mala, dodatnia liczba
         self.delta = 0.0
 
     def change_prize(self, curr_state, newPrize):
@@ -51,11 +50,6 @@ class reinf_learning:
 
             self.delta = max(self.delta, abs( old_prize - self.prize_dict[self.prev_state][0]))
 
-            if self.delta < self.fi:
-                return 1
-
-
-        return 0
 
 
     def policy_improvement(self, states):
