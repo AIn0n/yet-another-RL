@@ -1,4 +1,5 @@
 #include <iostream>
+#include <array>
 #include <cassert>
 
 #define BOARD_SIZE 9
@@ -11,10 +12,7 @@ class TicTacToe
 public:
     TicTacToe(void) { clearBoard(); }
 
-    void clearBoard(void)
-    { 
-        for(int i = 0; i < BOARD_SIZE; ++i) board[i] = EMPTY_FIELD;
-    }
+    void clearBoard(void){ board.fill(EMPTY_FIELD);}
 
     void showBoard(void)
     {
@@ -22,20 +20,17 @@ public:
         {
             for(int x = 0; x < MAX_XY; ++x)
             {
-                std::cout << board[x + y * MAX_XY] << " ";
+                std::cout << board[x + y * MAX_XY] << ' ';
             }
-            std::cout << std::endl;
+            std::cout << '\n';
         }
     }
 
-    int* getBoard(void) { return board; }
+    std::array<int, BOARD_SIZE> getBoard() {return board;}
 
     void setField(uint x, uint y, int player)
     {
-        if((player != PLAYER_X && player != PLAYER_O) || x > MAX_XY-1 || y > MAX_XY-1)
-        {
-            throw std::invalid_argument("wrong value");
-        }
+        assert((player == PLAYER_X || player == PLAYER_O) && x < MAX_XY && y < MAX_XY);
         board[x + y * MAX_XY] = player;
     }
 
@@ -55,7 +50,7 @@ public:
     }
 
 private:
-    int board[BOARD_SIZE];
+    std::array<int, BOARD_SIZE> board;
 
     int winnerCheckFirstDiagonal(void) { 
         return(board[0] == board[4] && board[4] == board[8]) ? board[0] : EMPTY_FIELD;}
@@ -86,19 +81,22 @@ int main(void)
 {
 //tictactoe constructor test
     TicTacToe ttt = TicTacToe();
-    int* tab = ttt.getBoard();
+    std::array<int, BOARD_SIZE> tab = ttt.getBoard();
     for(int i = 0; i < BOARD_SIZE; ++i)
         assert(tab[i] == EMPTY_FIELD);
 
 //change field test
     ttt.setField(0, 0, PLAYER_X);
-    assert(tab[0] == PLAYER_X);
-
     ttt.setField(2, 2, PLAYER_O);
+
+    tab = ttt.getBoard();
+
+    assert(tab[0] == PLAYER_X);
     assert(tab[8] == PLAYER_O);
 
 //test clearing
     ttt.clearBoard();
+    tab = ttt.getBoard();
     for(int i = 0; i < BOARD_SIZE; ++i)
         assert(tab[i] == EMPTY_FIELD);
 
