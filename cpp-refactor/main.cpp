@@ -4,76 +4,121 @@
 
 #define BOARD_SIZE 9
 #define MAX_XY 3
-#define EMPTY_FIELD 0
+#define EMPTY 0
 #define PLAYER_X 1
 #define PLAYER_O -1
+
+enum Field : int8_t {
+    o       = -1,
+    empty   = 0,
+    x       = 1
+};
+
+char
+fieldToChar(Field f)
+{
+    switch (f) {
+    case Field::o:
+        return 'o';
+    case Field::x:
+        return 'x';
+    }
+    return '_';
+}
+
 class TicTacToe
 {
 public:
-    TicTacToe(void) { clearBoard(); }
+    TicTacToe(void) 
+    { 
+        clearBoard(); 
+    }
 
-    void clearBoard(void){ board.fill(EMPTY_FIELD);}
+    inline void 
+    clearBoard(void)
+    { 
+        board.fill(Field::empty);
+    }
 
-    void showBoard(void)
+    void 
+    showBoard(void)
     {
-        for(int y = 0; y < MAX_XY; ++y)
-        {
-            for(int x = 0; x < MAX_XY; ++x)
-            {
-                std::cout << board[x + y * MAX_XY] << ' ';
-            }
+        for (int y = 0; y < MAX_XY; ++y) {
+            for (int x = 0; x < MAX_XY; ++x)
+                std:: cout << fieldToChar(board[x + y * MAX_XY]) << ' ';
             std::cout << '\n';
         }
     }
 
-    std::array<int, BOARD_SIZE> getBoard() {return board;}
-
-    void setField(uint x, uint y, int player)
+    inline std::array<Field, BOARD_SIZE> 
+    getBoard() 
     {
-        assert((player == PLAYER_X || player == PLAYER_O) && x < MAX_XY && y < MAX_XY);
+        return board;
+    }
+
+    inline void 
+    setField(uint x, uint y, Field player)
+    {
+        assert(x < MAX_XY && y < MAX_XY);
         board[x + y * MAX_XY] = player;
     }
 
-    int checkForWinner(void)
+    Field 
+    checkForWinner(void)
     {
-        int winner = EMPTY_FIELD;
-        for(int i = 0; i < MAX_XY; ++i)
-        {
+        int winner = EMPTY;
+        for (int i = 0; i < MAX_XY; ++i) {
             winner += winnerCheckCol(i);
             winner += winnerCheckRow(i);
         }
         winner += winnerCheckFirstDiagonal();
         winner += winnerCheckSecondDiagonal();
 
-        if(!winner) return EMPTY_FIELD;
-        return (winner > 0) ? PLAYER_X : PLAYER_O;
+        if (!winner) 
+            return Field::empty;
+        return (winner > 0) ? Field::x : Field::o;
+    }
+
+    bool
+    isGameEnded(void)
+    {
+        int emptyFields = 0;
+        for (const auto &field : board)
+            emptyFields += (field != Field::empty);
+        return emptyFields == BOARD_SIZE || checkForWinner() != Field::empty;
     }
 
 private:
-    std::array<int, BOARD_SIZE> board;
+    std::array<Field, BOARD_SIZE> board;
 
-    int winnerCheckFirstDiagonal(void) { 
-        return(board[0] == board[4] && board[4] == board[8]) ? board[0] : EMPTY_FIELD;}
+    inline Field
+    winnerCheckFirstDiagonal(void) 
+    { 
+        return board[0]==board[4] && board[4]==board[8] ? board[0]:Field::empty;
+    }
 
-    int winnerCheckSecondDiagonal(void) { 
-        return(board[2] == board[4] && board[4] == board[6]) ? board[2] : EMPTY_FIELD;}
+    inline Field
+    winnerCheckSecondDiagonal(void) 
+    { 
+        return board[2]==board[4] && board[4]==board[6] ? board[2]:Field::empty;
+    }
 
-    int winnerCheckCol(uint col)
+    inline Field
+    winnerCheckCol(uint col)
     {
         return (
             board[col + 0 * MAX_XY] == board[col + 1 * MAX_XY] &&
-            board[col + 1 * MAX_XY] == board[col + 2 * MAX_XY]
-        ) 
-        ? board[col + 0 * MAX_XY] : EMPTY_FIELD;
+            board[col + 1 * MAX_XY] == board[col + 2 * MAX_XY])
+        ? board[col + 0 * MAX_XY] : Field::empty;
     }
 
-    int winnerCheckRow(uint row)
+    inline Field
+    winnerCheckRow(uint row)
     {
         return (
             board[0 + row * MAX_XY] == board[1 + row * MAX_XY] &&
-            board[1 + row * MAX_XY] == board[2 + row * MAX_XY]
-        )
-        ? board[row + 0 * MAX_XY] : EMPTY_FIELD;
+            board[1 + row * MAX_XY] == board[2 + row * MAX_XY])
+        ? board[0 + row * MAX_XY] : Field::empty;
     }
 };
 
@@ -81,35 +126,38 @@ int main(void)
 {
 //tictactoe constructor test
     TicTacToe ttt = TicTacToe();
-    std::array<int, BOARD_SIZE> tab = ttt.getBoard();
-    for(int i = 0; i < BOARD_SIZE; ++i)
-        assert(tab[i] == EMPTY_FIELD);
+    std::array<Field, BOARD_SIZE> tab = ttt.getBoard();
+    for (const auto &field : tab)
+        assert(field == Field::empty);
 
 //change field test
-    ttt.setField(0, 0, PLAYER_X);
-    ttt.setField(2, 2, PLAYER_O);
+    ttt.setField(0, 0, Field::x);
+    ttt.setField(2, 2, Field::o);
 
     tab = ttt.getBoard();
 
-    assert(tab[0] == PLAYER_X);
-    assert(tab[8] == PLAYER_O);
+    assert(tab[0] == Field::x);
+    assert(tab[8] == Field::o);
 
 //test clearing
     ttt.clearBoard();
     tab = ttt.getBoard();
-    for(int i = 0; i < BOARD_SIZE; ++i)
-        assert(tab[i] == EMPTY_FIELD);
+    for (int i = 0; i < BOARD_SIZE; ++i)
+        assert(tab[i] == Field::empty);
 
-//check winner test
-    ttt.setField(0, 0, PLAYER_X);   //1, 1, 1
-    ttt.setField(1, 0, PLAYER_X);   //0, 0, 0
-    ttt.setField(2, 0, PLAYER_X);   //0, 0, 0
-    assert(ttt.checkForWinner() == PLAYER_X);
+//check winner test (row)
+    for(int i = 0; i < 3; ++i)
+        ttt.setField(i, 0, Field::x);   
+    assert(ttt.checkForWinner() == Field::x);
 
-    ttt.setField(0, 0, PLAYER_O);   //1, 0, 0
-    ttt.setField(1, 1, PLAYER_O);   //0, 1, 0
-    ttt.setField(2, 2, PLAYER_O);   //0, 0, 1
-    assert(ttt.checkForWinner() == PLAYER_O);
+//check winner test (diagonal)
+    for(int i = 0; i < 3; ++i)
+        ttt.setField(i, i, Field::o);
+    assert(ttt.checkForWinner() == Field::o);
 
+//check isGameEnded function
+    assert(ttt.isGameEnded() == true);
+    ttt.setField(1, 1, Field::empty);
+    assert(ttt.isGameEnded() == false);
     return 0;
 }
