@@ -1,12 +1,10 @@
 #include <iostream>
 #include <array>
 #include <cassert>
+#include <map>
 
 #define BOARD_SIZE 9
 #define MAX_XY 3
-#define EMPTY 0
-#define PLAYER_X 1
-#define PLAYER_O -1
 
 enum Field : int8_t {
     o       = -1,
@@ -46,7 +44,7 @@ public:
         for (int y = 0; y < MAX_XY; ++y) {
             for (int x = 0; x < MAX_XY; ++x)
                 std:: cout << fieldToChar(board[x + y * MAX_XY]) << ' ';
-            std::cout << '\n';
+            std:: cout << '\n';
         }
     }
 
@@ -66,7 +64,7 @@ public:
     Field 
     checkForWinner(void)
     {
-        int winner = EMPTY;
+        int winner = 0;
         for (int i = 0; i < MAX_XY; ++i) {
             winner += winnerCheckCol(i);
             winner += winnerCheckRow(i);
@@ -122,15 +120,23 @@ private:
     }
 };
 
+template<class T>
+class RL {
+private:
+    T prevState;
+    float alpha, epsilon;
+    std::map<T, float> prizeDict;    
+};
+
 int main(void)
 {
-//tictactoe constructor test
+// tictactoe constructor test
     TicTacToe ttt = TicTacToe();
     std::array<Field, BOARD_SIZE> tab = ttt.getBoard();
     for (const auto &field : tab)
         assert(field == Field::empty);
 
-//change field test
+// change field test
     ttt.setField(0, 0, Field::x);
     ttt.setField(2, 2, Field::o);
 
@@ -139,25 +145,40 @@ int main(void)
     assert(tab[0] == Field::x);
     assert(tab[8] == Field::o);
 
-//test clearing
+// test clearing
     ttt.clearBoard();
     tab = ttt.getBoard();
     for (int i = 0; i < BOARD_SIZE; ++i)
         assert(tab[i] == Field::empty);
 
-//check winner test (row)
-    for(int i = 0; i < 3; ++i)
+// check winner test (row)
+    for (int i = 0; i < 3; ++i)
         ttt.setField(i, 0, Field::x);   
     assert(ttt.checkForWinner() == Field::x);
 
-//check winner test (diagonal)
-    for(int i = 0; i < 3; ++i)
+// check winner test (diagonal)
+    for (int i = 0; i < 3; ++i)
         ttt.setField(i, i, Field::o);
     assert(ttt.checkForWinner() == Field::o);
 
-//check isGameEnded function
+// check isGameEnded function
     assert(ttt.isGameEnded() == true);
     ttt.setField(1, 1, Field::empty);
     assert(ttt.isGameEnded() == false);
+
+// game
+    ttt = TicTacToe();
+    int i = 0;
+    uint x, y;
+    for (int i = 0; !ttt.isGameEnded(); ++i) {
+        Field currPlayer = (i % 2) ? Field::x : Field::o;
+        std::cout << "player -> "<< fieldToChar(currPlayer) << '\n'; 
+        std::cout << "\nenter coords (first x then y)" << std:: endl;
+        std::cin >> x;
+        std::cin >> y;
+
+        ttt.setField(x, y, currPlayer);
+        ttt.showBoard();
+    }
     return 0;
 }
