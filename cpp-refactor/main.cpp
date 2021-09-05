@@ -1,12 +1,17 @@
 #include <iostream>
 #include <array>
 #include <cassert>
-#include <map>
+#include <unordered_map>
+#include <vector>
+#include <random>
+#include <algorithm>
+#include <ctime>
 
 #define BOARD_SIZE 9
 #define MAX_XY 3
 
-enum Field : int8_t {
+enum
+Field : int8_t {
     o       = -1,
     empty   = 0,
     x       = 1
@@ -24,9 +29,24 @@ fieldToChar(Field f)
     return '_';
 }
 
-class TicTacToe
+template<typename Container, typename T>
+struct RandomChoice
 {
-public:
+    T
+    choice(Container n)
+    {
+        std::uniform_int_distribution<uint> distr(0.0, n.size() - 1);
+        return n[distr(rng)];
+    }
+
+    RandomChoice(std::default_random_engine engine) : rng(engine) {}
+
+private:
+    std::default_random_engine rng;
+};
+
+struct TicTacToe
+{
     TicTacToe(void) 
     { 
         clearBoard(); 
@@ -43,8 +63,8 @@ public:
     {
         for (int y = 0; y < MAX_XY; ++y) {
             for (int x = 0; x < MAX_XY; ++x)
-                std:: cout << fieldToChar(board[x + y * MAX_XY]) << ' ';
-            std:: cout << '\n';
+                std::cout << fieldToChar(board[x + y * MAX_XY]) << ' ';
+            std::cout << '\n';
         }
     }
 
@@ -52,6 +72,12 @@ public:
     getBoard() 
     {
         return board;
+    }
+
+    inline void
+    setBoard(std::array<Field, BOARD_SIZE> other)
+    {
+        board = other;
     }
 
     inline void 
@@ -86,7 +112,21 @@ public:
         return emptyFields == BOARD_SIZE || checkForWinner() != Field::empty;
     }
 
+    std::vector<std::array<Field, BOARD_SIZE>>
+    getNextLegalStates(Field player)
+    {
+        std::vector<std::array<Field, BOARD_SIZE>> states;
+        for (uint i = 0; i < BOARD_SIZE; ++i)
+            if (board[i] == Field::empty) {
+                std::array<Field, BOARD_SIZE> tmp;
+                std::copy(board.begin(), board.end(), tmp.begin());
+                tmp[i] = player;
+                states.push_back(tmp);
+            }
+        return states;
+    }
 private:
+
     std::array<Field, BOARD_SIZE> board;
 
     inline Field
@@ -120,15 +160,81 @@ private:
     }
 };
 
-template<class T>
-class RL {
+template<typename T>
+struct RL
+{
+    T 
+    getBestState(const std::vector<T> &states)
+    {
+        for (const T &it : states)
+            prizeDict.insert(std::pair<T, float>(it, 0.0));
+
+        std::uniform_real_distribution<float> zeroOneDist(0.0, 1.0);
+
+        float maxPrize;
+        T maxState;
+        if (zeroOneDist(rng) > epsilon) {
+            maxPrize = getStatesMaxPrize(states);
+            std::vector<T> maxStates;
+            std::copy_if(states.begin(), states.end(), maxStates.begin(),
+                [=](T i) { return prizeDict[i] == maxPrize; } );
+            maxState = randomChoice.choice(maxStates);
+        } else {
+            maxState = randomChoice.choice(states);
+            maxPrize = prizeDict[maxState];
+        }
+
+        if (prizeDict.find(prevState) != prizeDict.end())
+            prizeDict[prevState] += alpha * (maxPrize - prizeDict[prevState]);
+
+        prevState = maxState;
+        return maxState;   
+    }
+
+    inline void
+    setPrize(T state, float prize)
+    {
+        assert(prizeDict.find(state) != prizeDict.end());
+        prizeDict[state] = prize;
+    }
+
+    void
+    resetPrevState()
+    {
+        prevState = initState;
+    }
+
+    RL(float a, float e, T init, std::default_random_engine engine)
+    {
+        alpha   = a;
+        epsilon = e;
+        rng     = engine;
+        prevState = init;
+        randomChoice = RandomChoice<std::vector<T>, T>(engine);
+    }
+
 private:
-    T prevState;
+
+    float
+    getStatesMaxPrize(const std::vector<T> &states)
+    {
+        assert(states.size() > 0);
+        float max = prizeDict[states[0]];
+        for (const float & it : states)
+            if (prizeDict[it] > max)
+                max = prizeDict[it];
+        return max;
+    }
+
+    T prevState, initState;
     float alpha, epsilon;
-    std::map<T, float> prizeDict;    
+    std::unordered_map<T, float> prizeDict;
+    RandomChoice<std::vector<T>, T> randomChoice;
+    std::default_random_engine rng;
 };
 
-int main(void)
+void
+test(void)
 {
 // tictactoe constructor test
     TicTacToe ttt = TicTacToe();
@@ -166,8 +272,26 @@ int main(void)
     ttt.setField(1, 1, Field::empty);
     assert(ttt.isGameEnded() == false);
 
-// game
+// test possible states
     ttt = TicTacToe();
+    assert(ttt.getNextLegalStates(Field::o).size() == 9);
+    ttt.setField(1, 1, Field::o);
+    ttt.setField(2, 2, Field::x);
+    assert(ttt.getNextLegalStates(Field::o).size() == 7);
+}
+
+
+int main(void)
+{
+    test();
+// game
+    static std:: default_random_engine rng_engine;
+    TicTacToe ttt = TicTacToe();
+    rng_engine.seed(time(nullptr));
+    std::array<Field, BOARD_SIZE> emptyArr = std::array<Field, BOARD_SIZE>();
+    emptyArr.fill(Field::empty);
+    RL<std::array<Field, BOARD_SIZE>> rl1 = RL<std::array<Field, BOARD_SIZE>>(0.01, 0.001, emptyArr, rng_engine);
+    RL<std::array<Field, BOARD_SIZE>> rl2 = RL<std::array<Field, BOARD_SIZE>>(0.01, 0.001, emptyArr, rng_engine);
     int i = 0;
     uint x, y;
     for (int i = 0; !ttt.isGameEnded(); ++i) {
